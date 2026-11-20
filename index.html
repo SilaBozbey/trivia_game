@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Trivia Game</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #121417;
+      color: #f3f4f6;
+      padding: 16px;
+    }
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #1d2127;
+      border: 1px solid #2e343e;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+    h1 { margin: 0 0 16px; font-size: 22px; }
+    p { margin: 8px 0; line-height: 1.5; }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #3a424f;
+      background: #121417;
+      color: #fff;
+      font-size: 15px;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    .feedback { margin-top: 14px; font-weight: bold; }
+    .correct { color: #4ade80; }
+    .wrong { color: #f87171; }
+    .meta { color: #9ca3af; font-size: 14px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="app"></div>
+
+  <script>
+    const questions = {
+      "What is the keyword to define a function in Python?": "def",
+      "Which data type is used to store True or False values?": "boolean",
+      "What is the correct file extension for Python files?": ".py",
+      "Which symbol is used to comment in Python?": "#",
+      "What function is used to get input from the user?": "input",
+      "How do you start a for loop in Python?": "for",
+      "What is the output of 2 ** 3 in Python?": "8",
+      "What keyword is used to import a module in Python?": "import",
+      "What does the len() function return?": "length",
+      "What is the result of 10 // 3 in Python?": "3"
+    };
+
+    const app = document.getElementById("app");
+    const allQuestions = Object.keys(questions);
+    let selectedQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+
+    function pickRandom(arr, count) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy.slice(0, count);
+    }
+
+    function renderStartScreen() {
+      score = 0;
+      currentIndex = 0;
+      app.innerHTML = `
+        <h1>Python Trivia Game</h1>
+        <p>How many questions (1-${allQuestions.length})?</p>
+        <input type="number" id="countInput" min="1" max="${allQuestions.length}" value="5" />
+        <button id="startBtn">Start Game</button>
+        <div class="feedback wrong" id="errMsg"></div>
+      `;
+
+      const countInput = document.getElementById("countInput");
+      const startBtn = document.getElementById("startBtn");
+      const errMsg = document.getElementById("errMsg");
+
+      function start() {
+        const total = parseInt(countInput.value, 10);
+        if (isNaN(total) || total < 1 || total > allQuestions.length) {
+          errMsg.textContent = `Please enter a number between 1 and ${allQuestions.length}.`;
+          return;
+        }
+        selectedQuestions = pickRandom(allQuestions, total);
+        renderQuestion();
+      }
+
+      startBtn.addEventListener("click", start);
+      countInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") start();
+      });
+      countInput.focus();
+    }
+
+    function renderQuestion() {
+      const q = selectedQuestions[currentIndex];
+      app.innerHTML = `
+        <h1>Python Trivia Game</h1>
+        <div class="meta">Question ${currentIndex + 1} of ${selectedQuestions.length} | Score: ${score}</div>
+        <p><strong>${currentIndex + 1}. ${q}</strong></p>
+        <input type="text" id="answerInput" placeholder="Your answer" autocomplete="off" />
+        <button id="submitBtn">Submit</button>
+        <div class="feedback" id="feedback"></div>
+      `;
+
+      const answerInput = document.getElementById("answerInput");
+      const submitBtn = document.getElementById("submitBtn");
+      const feedback = document.getElementById("feedback");
+
+      function checkAnswer() {
+        const userAnswer = answerInput.value.toLowerCase().trim();
+        const correctAnswer = questions[q];
+        answerInput.disabled = true;
+        submitBtn.disabled = true;
+
+        if (userAnswer === correctAnswer.toLowerCase()) {
+          score += 1;
+          feedback.className = "feedback correct";
+          feedback.textContent = "Correct!";
+        } else {
+          feedback.className = "feedback wrong";
+          feedback.textContent = `Wrong. The correct answer is: ${correctAnswer}.`;
+        }
+
+        setTimeout(() => {
+          currentIndex += 1;
+          if (currentIndex < selectedQuestions.length) {
+            renderQuestion();
+          } else {
+            renderEndScreen();
+          }
+        }, 1100);
+      }
+
+      submitBtn.addEventListener("click", checkAnswer);
+      answerInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !answerInput.disabled) checkAnswer();
+      });
+      answerInput.focus();
+    }
+
+    function renderEndScreen() {
+      app.innerHTML = `
+        <h1>Game Over</h1>
+        <p>Game over! Your final score is ${score}/${selectedQuestions.length}.</p>
+        <p>Play again? (y/n)</p>
+        <button id="yesBtn">Yes (y)</button>
+        <button id="noBtn">No (n)</button>
+        <div class="feedback" id="endMsg"></div>
+      `;
+
+      document.getElementById("yesBtn").addEventListener("click", renderStartScreen);
+      document.getElementById("noBtn").addEventListener("click", () => {
+        document.getElementById("endMsg").textContent = "See you in the next game!";
+      });
+    }
+
+    renderStartScreen();
+  </script>
+</body>
+</html>
